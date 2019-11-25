@@ -1,13 +1,18 @@
 import { asyncRouterMap, constantRouterMap } from '@/config/router.config'
-
+import { SET_ROUTERS } from '@/store/mutation--type'
 
 //根据权限过滤路由
 function filterAsyncRouter(routerMap ,roles){
     const accessedRouters = routerMap.filter(route => {
         if(hasPermission(roles.permissionList, route)){
-
+            if(route.children&&route.children.length){
+                route.children = filterAsyncRouter(route.children,roles)
+            }
+            return true
         }
+        return false
     })
+    return accessedRouters
 }
 
 
@@ -32,13 +37,18 @@ const permission = {
         addRouters: []
     },
     mutations:{
-
+        [SET_ROUTERS]:(state,routers)=>{
+            state.addRouters = routers
+            state.routers = constantRouterMap.concat(routers)
+        }
     },
     actions:{
         GenerateRoutes({ commit },data){
             return new Promise(resolve => {
                 const { roles } = data
                 const accessedRouters = filterAsyncRouter(asyncRouterMap, roles)
+                commit(SET_ROUTERS,accessedRouters)
+                resolve()
             })
         }
     }
